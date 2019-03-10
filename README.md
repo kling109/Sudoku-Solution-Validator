@@ -1,2 +1,13 @@
-# Sudoku-Solution-Validator
-A program to validate the correctness of sudoku grids
+# Sudoku Solution Validator
+
+Trevor Kling: CPSC 380 Assignment 1
+
+## Introduction
+
+## Specification
+
+## Known Issues
+
+## Compilation Instructions
+
+## Sources
