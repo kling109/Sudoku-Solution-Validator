@@ -1,0 +1,51 @@
+Sudoku Solution Validator Design Document
+
+Trevor Kling
+3 March 2019
+
+Overview:
+
+This document provides a framework for the development of a Sudoku puzzle validator.  The program takes an input of a formatted
+text file, and outputs a set of reccomendations to fix the given grid.   The file should be formatted in a grid, with entries in
+each row separated by commas.  The program then will read in the file, evaluate the grid for errors, and output a list of actions
+to take in order to fix any issues in the grid.
+
+Goals:
+
+Allow an N-by-N grid of arbitrary N characters to be checked for correctness, based on Sudoku rules.
+Apply multithreading to improve computation speed.
+
+Milestones:
+3 March 2019 - Complete SDD
+
+Proposed Solution:
+
+Class: SudokuValidator
+  - private variables:
+     vector<int*> errorList:
+       Each element of the list contains 3 parameters; the row, the column, and the duplicate character/empty symbol.
+     int** gameBoard:
+       Contains the sudoku grid, taken in from the input specifications.
+     pthread_mutex_t lock:
+       Standard mutex lock for multithreading access to the error list.
+  - public variables:
+    N/A
+  - private methods:
+      void checkRows():
+        Finds errors in a particular row.  Consists of looping from 0 to N-1 and calling findRowError(i) on the specific row 
+        number.
+      void findRowError(int i):
+        Iterates over gameBoard[i], pushing each unique element found into a vector<int> elementList.  If a duplicate element is
+        found, the program records the row and column of that element and pushes the error onto the errorList.
+      Methods for checkColumn, findColumnError, checkBlock, and findBlockError should follow identically.
+  - public methods:
+    void readFile(string fileName):
+      Reads in a file, parsing it to a two-dimensional array assigned to "gameBoard".
+    void fixBoard():
+      Having read in a gameBoard, the program proceeds to reccomend methods to fix the board.  This is the main function of 
+      the class, and will largely be calling other methods.  Th class will instantiate three threads; one to check for errors
+      in the format of rows, one to check columns, and one to check blocks.  All of these threads will write their errors to 
+      the "errorList."
+
+Open Questions:
+Is there an optimal way to check for how to solve a given error without disrupting the rest of the grid?
