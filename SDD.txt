@@ -22,33 +22,47 @@ Proposed Solution:
 
 Class: SudokuValidator
   - private variables:
-     vector<vector<vector<int> > > errorList:
-       Each element of the list contains 4 parameters; the row, the column, a list of characters not appearing in the row, and a 
-       list of characters appearing more than once in the row.
+     vector<string> solutionList:
+       Contains a list of changes to make to fix the errors in the input file
+       
+     vector<vector<int> > errorList:
+       Each element of the list contains 3 parameters; the row, the column, and a duplicate character
+       
      int** gameBoard:
        Contains the sudoku grid, taken in from the input specifications.
+       
      pthread_mutex_t lock:
        Standard mutex lock for multithreading access to the error list.
+       
   - public variables:
-    N/A
+      N/A
   - private methods:
       void checkRows():
         Finds errors in a particular row.  Consists of looping from 0 to N-1 and calling findRowError(i) on the specific row 
         number.
+        
       void findRowError(int i):
-        Begins by instantiating a vector of all posible characters in a given row.  Iterates over gameBoard[i], removing each
-        character it comes across from the vector.  If a character is encountered twice, it is flagged and added to another 
-        vector of duplicate characters.  If the vector of duplicates or the vector of not found charactrs is nonempty at the 
-        end of the iteration, the program pushes the set of information to the errorList.
+        Iterates over gameBoard[i], adding each unique character it comes across to a vector.  If a character is encountered
+        twice, the set of row-column-element is added to the error list if it is new.
+        
       Methods for checkColumn, findColumnError, checkBlock, and findBlockError should follow identically.
+      
+      void toFix()
+        Each error is then checked for the row, column, and block.  The block solution is replaced, then
+        findRowError and findColumnError are called on the given row and column.  IThe initial error is removed
+        from the errorList and a string indicating what to replace the error element with is added to the solutionList.
+        If the errorList is not empty, toFix is called recursively.
+
   - public methods:
     void readFile(string fileName):
       Reads in a file, parsing it to a two-dimensional array assigned to "gameBoard".
+      
     void fixBoard():
       Having read in a gameBoard, the program proceeds to reccomend methods to fix the board.  This is the main function of 
       the class, and will largely be calling other methods.  Th class will instantiate three threads; one to check for errors
       in the format of rows, one to check columns, and one to check blocks.  All of these threads will write their errors to 
-      the "errorList."
-
+      the "errorList."  The process of fixing errors is then given to a helper method toFix.  Once toFix finishes, the set of
+      solutions in order of application is printed to the command line.
+      
 Open Questions:
 Is there an optimal way to check for how to solve a given error without disrupting the rest of the grid?
