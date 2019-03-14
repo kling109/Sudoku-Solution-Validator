@@ -19,7 +19,6 @@ class SudokuSolutionValidator
     int** gameBoard;
     pthread_mutex_t lock;
     pthread_t threads[3];
-    bool insertUniqueInt(int elem, std::vector<int>* list);
     void insertUniqueRecord(std::vector<int>* record, std::vector<std::vector<int>* >* fullList);
     void* checkRows(void* ph);
     void findRowError(int i);

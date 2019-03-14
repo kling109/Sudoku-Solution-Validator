@@ -17,6 +17,8 @@ Project: Sudoku Solution Validator
 
 using namespace std;
 
+typedef void* (*THREADFUNCPOINTER)(void *);
+
 /*
 Default constuctor for a solution validator.  Initializes vectors for later use, and sets
 gameBoard to null to check if a file has been read later.
@@ -86,32 +88,6 @@ void SudokuSolutionValidator::readFile(string fileName)
   }
 }
 
-/*
-Checks if an element to be inserted into a list is unique.  If the element does not match any existing
-list element, it is inserted and the function returns 0.  Otherwise, the element is not added and the
-function returns 1.
-*/
-bool SudokuSolutionValidator::insertUniqueInt(int elem, vector<int>* list)
-{
-  bool unique = true;
-  for (int k = 0; k < list->size(); ++k)
-  {
-    if (list->at(k) == elem)
-    {
-      unique = false;
-      break;
-    }
-  }
-  if (unique)
-  {
-    list->push_back(elem);
-    return 0;
-  }
-  else
-  {
-    return 1;
-  }
-}
 
 /*
 Checks if a specific error record is unique before insertion.  If the identifier for the location of the
@@ -125,6 +101,22 @@ void SudokuSolutionValidator::insertUniqueRecord(vector<int>* record, vector<vec
   {
     if (fullList->at(k)->at(0) == record->at(0) && fullList->at(k)->at(1) == record->at(1))
     {
+      bool noMatch = true;
+      for (int j = 0; j < (int)((fullList->at(k)->size()-3)/2); ++j)
+      {
+        if (fullList->at(k)->at(2*j) == record->at(2) && fullList->at(k)->at(2*j+1) == record->at(3))
+        {
+          noMatch = false;
+        }
+      }
+      if (noMatch)
+      {
+        int item = fullList->at(k)->back();
+        fullList->at(k)->pop_back();
+        fullList->at(k)->push_back(record->at(2));
+        fullList->at(k)->push_back(record->at(3));
+        fullList->at(k)->push_back(item);
+      }
       unique = false;
       break;
     }
@@ -160,18 +152,22 @@ void SudokuSolutionValidator::findRowError(int i)
     cout << "Improper bounds received." << endl;
     return;
   }
-  vector<int>* numsFound = new vector<int>();
   for (int j = 0; j < 9; ++j)
   {
-    if (insertUniqueInt(gameBoard[i][j], numsFound) == 1)
+    for (int k = j+1; k < 9; ++k)
     {
-      vector<int>* error = new vector<int>();
-      error->push_back(i);
-      error->push_back(j);
-      error->push_back(gameBoard[i][j]);
-      pthread_mutex_lock(&this->lock);
-      insertUniqueRecord(error, errorList);
-      pthread_mutex_unlock(&this->lock);
+      if (gameBoard[i][j] == gameBoard[i][k])
+      {
+        vector<int>* error = new vector<int>();
+        error->push_back(i);
+        error->push_back(j);
+        error->push_back(i);
+        error->push_back(k);
+        error->push_back(gameBoard[i][j]);
+        pthread_mutex_lock(&this->lock);
+        insertUniqueRecord(error, errorList);
+        pthread_mutex_unlock(&this->lock);
+      }
     }
   }
 }
@@ -201,18 +197,22 @@ void SudokuSolutionValidator::findColumnError(int j)
     cout << "Improper bounds received." << endl;
     return;
   }
-  vector<int>* numsFound = new vector<int>();
   for (int i = 0; i < 9; ++i)
   {
-    if (insertUniqueInt(this->gameBoard[i][j], numsFound) == 1)
+    for (int k = i+1; k < 9; ++k)
     {
-      vector<int>* error = new vector<int>();
-      error->push_back(i);
-      error->push_back(j);
-      error->push_back(gameBoard[i][j]);
-      pthread_mutex_lock(&this->lock);
-      insertUniqueRecord(error, errorList);
-      pthread_mutex_unlock(&this->lock);
+      if (gameBoard[i][j] == gameBoard[k][j])
+      {
+        vector<int>* error = new vector<int>();
+        error->push_back(i);
+        error->push_back(j);
+        error->push_back(k);
+        error->push_back(j);
+        error->push_back(gameBoard[i][j]);
+        pthread_mutex_lock(&this->lock);
+        insertUniqueRecord(error, errorList);
+        pthread_mutex_unlock(&this->lock);
+      }
     }
   }
 }
@@ -247,20 +247,32 @@ void SudokuSolutionValidator::findBlockError(int x, int y)
     cout << "Improper bounds received." << endl;
     return;
   }
-  vector<int>* numsFound = new vector<int>();
   for (int i = 0; i < 3; ++i)
   {
     for (int j = 0; j < 3; ++j)
     {
-      if (insertUniqueInt(this->gameBoard[x+i][y+j], numsFound) == 1)
+      for (int k = i; k < 3; ++k)
       {
-        vector<int>* error = new vector<int>();
-        error->push_back(x+i);
-        error->push_back(y+j);
-        error->push_back(gameBoard[x+i][y+j]);
-        pthread_mutex_lock(&this->lock);
-        insertUniqueRecord(error, errorList);
-        pthread_mutex_unlock(&this->lock);
+        int startLocation = 0;
+        if (k == i)
+        {
+          startLocation = j+1;
+        }
+        for (int l = startLocation; l < 3; ++l)
+        {
+          if (gameBoard[x+i][y+j] == gameBoard[x+k][y+l])
+          {
+            vector<int>* error = new vector<int>();
+            error->push_back(x+i);
+            error->push_back(y+j);
+            error->push_back(x+k);
+            error->push_back(y+l);
+            error->push_back(gameBoard[x+i][y+j]);
+            pthread_mutex_lock(&this->lock);
+            insertUniqueRecord(error, errorList);
+            pthread_mutex_unlock(&this->lock);
+          }
+        }
       }
     }
   }
@@ -273,9 +285,9 @@ void SudokuSolutionValidator::fixBoard()
     cout << "No sudoku grid has been supplied." << endl;
     return;
   }
-  pthread_create(&(threads[0]), NULL, &SudokuSolutionValidator::checkRows, NULL);
-  pthread_create(&(threads[1]), NULL, &SudokuSolutionValidator::checkColumns, NULL);
-  pthread_create(&(threads[2]), NULL, &SudokuSolutionValidator::checkBlocks, NULL);
+  pthread_create(&(threads[0]), NULL, (THREADFUNCPOINTER) &SudokuSolutionValidator::checkRows, this);
+  pthread_create(&(threads[1]), NULL, (THREADFUNCPOINTER) &SudokuSolutionValidator::checkColumns, this);
+  pthread_create(&(threads[2]), NULL, (THREADFUNCPOINTER) &SudokuSolutionValidator::checkBlocks, this);
   pthread_join(threads[0], NULL);
   pthread_join(threads[1], NULL);
   pthread_join(threads[2], NULL);
@@ -287,7 +299,11 @@ void SudokuSolutionValidator::fixBoard()
   {
     for (int i = 0; i < errorList->size(); ++i)
     {
-      cout << "[" << errorList->at(i)->at(0)+1 << "," << errorList->at(i)->at(1)+1 << "], " << errorList->at(i)->at(2) << endl;
+      for (int j = 0; j < (int)((errorList->at(i)->size()-1)/2); ++j)
+      {
+        cout << "[" << errorList->at(i)->at(2*j)+1 << "," << errorList->at(i)->at(2*j + 1)+1 << "], ";
+      }
+      cout << errorList->at(i)->at(errorList->at(i)->size()-1) << endl;
     }
   }
 }
