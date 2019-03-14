@@ -15,5 +15,6 @@ int main()
 {
   SudokuSolutionValidator* tester = new SudokuSolutionValidator();
   tester->readFile("test1.txt");
+  tester->fixBoard();
   return 0;
 }

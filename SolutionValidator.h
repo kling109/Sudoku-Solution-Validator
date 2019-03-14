@@ -18,14 +18,15 @@ class SudokuSolutionValidator
     std::vector<std::vector<int>* >* errorList;
     int** gameBoard;
     pthread_mutex_t lock;
+    pthread_t threads[3];
     bool insertUniqueInt(int elem, std::vector<int>* list);
     void insertUniqueRecord(std::vector<int>* record, std::vector<std::vector<int>* >* fullList);
-    void checkRows();
+    void* checkRows(void* ph);
     void findRowError(int i);
-    void checkColumns();
+    void* checkColumns(void* ph);
     void findColumnError(int j);
-    void checkBlocks();
-    void findBlockError(int i, int j);
+    void* checkBlocks(void* ph);
+    void findBlockError(int x, int y);
     void toFix(std::vector<std::vector<int>* >* errors);
   public:
     SudokuSolutionValidator();

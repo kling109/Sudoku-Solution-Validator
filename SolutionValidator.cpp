@@ -138,7 +138,7 @@ void SudokuSolutionValidator::insertUniqueRecord(vector<int>* record, vector<vec
 /*
 Iterates over all rows of the grid, checking them for errors.
 */
-void SudokuSolutionValidator::checkRows()
+void* SudokuSolutionValidator::checkRows(void* ph)
 {
   for (int i = 0; i < 9; ++i)
   {
@@ -149,21 +149,145 @@ void SudokuSolutionValidator::checkRows()
 /*
 Checks a specific row for errors.  If a duplicate element is found in the row, it indicates that
 all 9 elements are not present in that row.  The program then pushes a record of the duplicate to the
-error list, informing the program of where an error has occurred in the grid.
+error list, informing the program of where an error has occurred in the grid.  A mutual exclusion lock
+ensures that, when a thread checks the list, all elements in the list are accounted for and one is not
+in the process of being added.
 */
 void SudokuSolutionValidator::findRowError(int i)
 {
-  int* row = gameBoard[i];
+  if (i > 8)
+  {
+    cout << "Improper bounds received." << endl;
+    return;
+  }
   vector<int>* numsFound = new vector<int>();
   for (int j = 0; j < 9; ++j)
   {
-    if (insertUniqueInt(row[j], numsFound) == 1)
+    if (insertUniqueInt(gameBoard[i][j], numsFound) == 1)
     {
       vector<int>* error = new vector<int>();
       error->push_back(i);
       error->push_back(j);
-      error->push_back(row[j]);
+      error->push_back(gameBoard[i][j]);
+      pthread_mutex_lock(&this->lock);
       insertUniqueRecord(error, errorList);
+      pthread_mutex_unlock(&this->lock);
+    }
+  }
+}
+
+/*
+Iterates over all columnss of the grid, checking them for errors.
+*/
+void* SudokuSolutionValidator::checkColumns(void* ph)
+{
+  for (int j = 0; j < 9; ++j)
+  {
+    findColumnError(j);
+  }
+}
+
+/*
+Checks a specific column for errors.  If a duplicate element is found in the column, it indicates that
+all 9 elements are not present in that column.  The program then pushes a record of the duplicate to the
+error list, informing the program of where an error has occurred in the grid.  A mutual exclusion lock
+ensures that, when a thread checks the list, all elements in the list are accounted for and one is not
+in the process of being added.
+*/
+void SudokuSolutionValidator::findColumnError(int j)
+{
+  if (j > 8)
+  {
+    cout << "Improper bounds received." << endl;
+    return;
+  }
+  vector<int>* numsFound = new vector<int>();
+  for (int i = 0; i < 9; ++i)
+  {
+    if (insertUniqueInt(this->gameBoard[i][j], numsFound) == 1)
+    {
+      vector<int>* error = new vector<int>();
+      error->push_back(i);
+      error->push_back(j);
+      error->push_back(gameBoard[i][j]);
+      pthread_mutex_lock(&this->lock);
+      insertUniqueRecord(error, errorList);
+      pthread_mutex_unlock(&this->lock);
+    }
+  }
+}
+
+/*
+Iterates over all blocks in the grid, checking them for errors.
+*/
+void* SudokuSolutionValidator::checkBlocks(void* ph)
+{
+  for (int i = 0; i < 3; ++i)
+  {
+    for (int j = 0; j < 3; ++j)
+    {
+      int xcoord = 3*i;
+      int ycoord = 3*j;
+      findBlockError(xcoord, ycoord);
+    }
+  }
+}
+
+/*
+Checks a specified 3x3 area of the grid for errors.  Each area is selected by inputting the
+x and y coordinate of the top left element.  The function then checks if every element in a
+3x3 range to the right and down from the given coordinates is unique.  If not, then the program
+adds an error to the error list.  A mutual exclusion lock ensures that, when a thread checks the
+list, all elements in the list are accounted for and one is not in the process of being added.
+*/
+void SudokuSolutionValidator::findBlockError(int x, int y)
+{
+  if (x+2 > 8 || y+2 > 8)
+  {
+    cout << "Improper bounds received." << endl;
+    return;
+  }
+  vector<int>* numsFound = new vector<int>();
+  for (int i = 0; i < 3; ++i)
+  {
+    for (int j = 0; j < 3; ++j)
+    {
+      if (insertUniqueInt(this->gameBoard[x+i][y+j], numsFound) == 1)
+      {
+        vector<int>* error = new vector<int>();
+        error->push_back(x+i);
+        error->push_back(y+j);
+        error->push_back(gameBoard[x+i][y+j]);
+        pthread_mutex_lock(&this->lock);
+        insertUniqueRecord(error, errorList);
+        pthread_mutex_unlock(&this->lock);
+      }
+    }
+  }
+}
+
+void SudokuSolutionValidator::fixBoard()
+{
+  if (gameBoard == NULL)
+  {
+    cout << "No sudoku grid has been supplied." << endl;
+    return;
+  }
+  pthread_create(&(threads[0]), NULL, &SudokuSolutionValidator::checkRows, NULL);
+  pthread_create(&(threads[1]), NULL, &SudokuSolutionValidator::checkColumns, NULL);
+  pthread_create(&(threads[2]), NULL, &SudokuSolutionValidator::checkBlocks, NULL);
+  pthread_join(threads[0], NULL);
+  pthread_join(threads[1], NULL);
+  pthread_join(threads[2], NULL);
+  if (errorList->size() == 0)
+  {
+    cout << "No errors found in board" << endl;
+  }
+  else
+  {
+    for (int i = 0; i < errorList->size(); ++i)
+    {
+      cout << "[" << errorList->at(i)->at(0)+1 << "," << errorList->at(i)->at(1)+1 << "], " << errorList->at(i)->at(2) << endl;
     }
   }
 }
