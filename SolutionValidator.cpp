@@ -278,6 +278,84 @@ void SudokuSolutionValidator::findBlockError(int x, int y)
   }
 }
 
+void SudokuSolutionValidator::checkBoard()
+{
+  pthread_create(&(threads[0]), NULL, (THREADFUNCPOINTER) &SudokuSolutionValidator::checkRows, this);
+  pthread_create(&(threads[1]), NULL, (THREADFUNCPOINTER) &SudokuSolutionValidator::checkColumns, this);
+  pthread_create(&(threads[2]), NULL, (THREADFUNCPOINTER) &SudokuSolutionValidator::checkBlocks, this);
+  pthread_join(threads[0], NULL);
+  pthread_join(threads[1], NULL);
+  pthread_join(threads[2], NULL);
+}
+
+vector<int>* SudokuSolutionValidator::identifyReplacementPair(vector<int>* error)
+{
+  int rowChoice = -1;
+  int colChoice = -1;
+  for (int j = 1; j < error->size()-1; j = j+2)
+  {
+    for (int k = j; k < error->size()-1; k = k+2)
+    {
+      if (rowChoice == -1 && error->at(j-1) == error->at(k-1))
+      {
+        rowChoice = error->at(j-1);
+      }
+      if (colChoice == -1 && error->at(j) == error->at(k))
+      {
+        colChoice = error->at(j);
+      }
+    }
+    if (rowChoice != -1 && colChoice != -1)
+    {
+      break;
+    }
+  }
+  vector<int>* pair = new vector<int>();
+  pair->push_back(rowChoice);
+  pair->push_back(colChoice);
+  return pair;
+}
+
+void SudokuSolutionValidator::makeReplacement(vector<int>* location)
+{
+  vector<int>* nums = new vector<int>();
+  for (int i = 1; i < 10; ++i)
+  {
+    nums->push_back(i);
+  }
+  for (int i = 0; i < 9; ++i)
+  {
+    for (int j = 0; j < nums->size(); ++j)
+    {
+      if (gameBoard[location->at(0)][i] == nums->at(j))
+      {
+        nums->erase(nums->begin() + j);
+        break;
+      }
+    }
+  }
+  cout << "Change the contents of cell [" << location->at(0)+1 << ", " << location->at(1)+1 << "] to " << nums->at(0) << endl;
+  gameBoard[location->at(0)][location->at(1)] = nums->at(0);
+}
+
+/*
+Can find which cell to change; still needs a helper method to find which
+element to replace with.
+*/
+void SudokuSolutionValidator::toFix(vector<vector<int>* >* errors)
+{
+  if (errors->size() == 0)
+  {
+    cout << "There are no errors remaining in the board." << endl;
+    return;
+  }
+  vector<int>* replacement = identifyReplacementPair(errors->at(0));
+  makeReplacement(replacement);
+  errors->erase(errors->begin());
+  checkBoard();
+  toFix(errorList);
+}
+
 void SudokuSolutionValidator::fixBoard()
 {
   if (gameBoard == NULL)
@@ -285,25 +363,6 @@ void SudokuSolutionValidator::fixBoard()
     cout << "No sudoku grid has been supplied." << endl;
     return;
   }
-  pthread_create(&(threads[0]), NULL, (THREADFUNCPOINTER) &SudokuSolutionValidator::checkRows, this);
-  pthread_create(&(threads[1]), NULL, (THREADFUNCPOINTER) &SudokuSolutionValidator::checkColumns, this);
-  pthread_create(&(threads[2]), NULL, (THREADFUNCPOINTER) &SudokuSolutionValidator::checkBlocks, this);
-  pthread_join(threads[0], NULL);
-  pthread_join(threads[1], NULL);
-  pthread_join(threads[2], NULL);
-  if (errorList->size() == 0)
-  {
-    cout << "No errors found in board" << endl;
-  }
-  else
-  {
-    for (int i = 0; i < errorList->size(); ++i)
-    {
-      for (int j = 0; j < (int)((errorList->at(i)->size()-1)/2); ++j)
-      {
-        cout << "[" << errorList->at(i)->at(2*j)+1 << "," << errorList->at(i)->at(2*j + 1)+1 << "], ";
-      }
-      cout << errorList->at(i)->at(errorList->at(i)->size()-1) << endl;
-    }
-  }
+  checkBoard();
+  toFix(errorList);
 }

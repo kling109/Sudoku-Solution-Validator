@@ -25,7 +25,10 @@ class SudokuSolutionValidator
     void* checkColumns(void* ph);
     void findColumnError(int j);
     void* checkBlocks(void* ph);
+    void checkBoard();
     void findBlockError(int x, int y);
+    std::vector<int>* identifyReplacementPair(std::vector<int>* error);
+    void makeReplacement(std::vector<int>* location);
     void toFix(std::vector<std::vector<int>* >* errors);
   public:
     SudokuSolutionValidator();
