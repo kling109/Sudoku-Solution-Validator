@@ -19,7 +19,8 @@ class SudokuSolutionValidator
     int** gameBoard;
     pthread_mutex_t lock;
     pthread_t threads[3];
-    void insertUniqueRecord(std::vector<int>* record, std::vector<std::vector<int>* >* fullList);
+    void formatErrors(std::vector<std::vector<int>* >* errors);
+    void mergeVectors(std::vector<int>* vec1, std::vector<int>* vec2);
     void* checkRows(void* ph);
     void findRowError(int i);
     void* checkColumns(void* ph);
@@ -30,7 +31,7 @@ class SudokuSolutionValidator
     std::vector<int>* identifyReplacementPair(std::vector<int>* error);
     std::vector<int>* identifyBlock(std::vector<int>* location);
     void makeReplacement(std::vector<int>* location, std::vector<int>* error);
-    void toFix(std::vector<std::vector<int>* >* errors);
+    void toFix();
   public:
     SudokuSolutionValidator();
     ~SudokuSolutionValidator();

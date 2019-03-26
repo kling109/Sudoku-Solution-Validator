@@ -88,69 +88,6 @@ void SudokuSolutionValidator::readFile(string fileName)
   }
 }
 
-
-/*
-Checks if a specific error record is unique before insertion.  If the identifier for the location of the
-error on the grid is the same as an existing record, the error has already been recorded and is therefore
-ignored.
-*/
-void SudokuSolutionValidator::insertUniqueRecord(vector<int>* record, vector<vector<int>* >* fullList)
-{
-  bool unique = true;
-  for (int k = 0; k < fullList->size(); ++k)
-  {
-    for (int l = 0; l < (int)((fullList->at(k)->size()-1)/2); ++l)
-    {
-      if (fullList->at(k)->at(2*l) == record->at(0) && fullList->at(k)->at(2*l+1) == record->at(1))
-      {
-        bool noMatch = true;
-        for (int j = 0; j < (int)((fullList->at(k)->size()-1)/2); ++j)
-        {
-          if (fullList->at(k)->at(2*j) == record->at(2) && fullList->at(k)->at(2*j+1) == record->at(3))
-          {
-            noMatch = false;
-          }
-        }
-        if (noMatch)
-        {
-          int item = fullList->at(k)->back();
-          fullList->at(k)->pop_back();
-          fullList->at(k)->push_back(record->at(2));
-          fullList->at(k)->push_back(record->at(3));
-          fullList->at(k)->push_back(item);
-        }
-        unique = false;
-        break;
-      }
-      else if (fullList->at(k)->at(2*l) == record->at(2) && fullList->at(k)->at(2*l+1) == record->at(3))
-      {
-        bool noMatch = true;
-        for (int j = 0; j < (int)((fullList->at(k)->size()-1)/2); ++j)
-        {
-          if (fullList->at(k)->at(2*j) == record->at(0) && fullList->at(k)->at(2*j+1) == record->at(1))
-          {
-            noMatch = false;
-          }
-        }
-        if (noMatch)
-        {
-          int item = fullList->at(k)->back();
-          fullList->at(k)->pop_back();
-          fullList->at(k)->push_back(record->at(0));
-          fullList->at(k)->push_back(record->at(1));
-          fullList->at(k)->push_back(item);
-        }
-        unique = false;
-        break;
-      }
-    }
-  }
-  if (unique)
-  {
-    fullList->push_back(record);
-  }
-}
-
 /*
 Iterates over all rows of the grid, checking them for errors.
 */
@@ -189,7 +126,7 @@ void SudokuSolutionValidator::findRowError(int i)
         error->push_back(k);
         error->push_back(gameBoard[i][j]);
         pthread_mutex_lock(&this->lock);
-        insertUniqueRecord(error, errorList);
+        errorList->push_back(error);
         pthread_mutex_unlock(&this->lock);
       }
     }
@@ -234,7 +171,7 @@ void SudokuSolutionValidator::findColumnError(int j)
         error->push_back(j);
         error->push_back(gameBoard[i][j]);
         pthread_mutex_lock(&this->lock);
-        insertUniqueRecord(error, errorList);
+        errorList->push_back(error);
         pthread_mutex_unlock(&this->lock);
       }
     }
@@ -293,7 +230,7 @@ void SudokuSolutionValidator::findBlockError(int x, int y)
             error->push_back(y+l);
             error->push_back(gameBoard[x+i][y+j]);
             pthread_mutex_lock(&this->lock);
-            insertUniqueRecord(error, errorList);
+            errorList->push_back(error);
             pthread_mutex_unlock(&this->lock);
           }
         }
@@ -312,6 +249,79 @@ void SudokuSolutionValidator::checkBoard()
   pthread_join(threads[2], NULL);
 }
 
+void SudokuSolutionValidator::formatErrors(vector<vector<int>* >* errors)
+{
+  for (int i = 0; i < errors->size(); ++i)
+  {
+    for (int j = 0; j < errors->at(i)->size(); ++j)
+    {
+      cout << errors->at(i)->at(j) << ", ";
+    }
+    cout << endl;
+  }
+  for (int i = 0; i < errors->size(); ++i)
+  {
+    for (int j = i+1; j < errors->size(); ++j)
+    {
+      bool merged = false;
+      for (int k = 0; k < (errors->at(i)->size()-1)/2; ++k)
+      {
+        for (int l = 0; l < (errors->at(j)->size()-1)/2; ++l)
+        {
+          if (errors->at(i)->at(2*k) == errors->at(j)->at(2*l) && errors->at(i)->at(2*k+1) == errors->at(j)->at(2*l+1))
+          {
+            mergeVectors(errors->at(i), errors->at(j));
+            errors->erase(errors->begin() + j);
+            merged = true;
+            --j;
+            break;
+          }
+        }
+        if (merged)
+        {
+          break;
+        }
+      }
+    }
+  }
+  cout << "done" << endl;
+  for (int i = 0; i < errors->size(); ++i)
+  {
+    for (int j = 0; j < errors->at(i)->size(); ++j)
+    {
+      cout << errors->at(i)->at(j) << ", ";
+    }
+    cout << endl;
+  }
+}
+
+void SudokuSolutionValidator::mergeVectors(vector<int>* vec1, vector<int>* vec2)
+{
+  int backElem = vec1->back();
+  vec1->pop_back();
+  for (int i = 0; i < (vec2->size()-1)/2; ++i)
+  {
+    bool newElem = true;
+    for (int j = 0; j < (vec1->size())/2; ++j)
+    {
+      if (vec2->at(2*i) == vec1->at(2*j) && vec2->at(2*i+1) == vec1->at(2*j+1))
+      {
+        newElem = false;
+        break;
+      }
+    }
+    if (newElem)
+    {
+      vec1->push_back(vec2->at(2*i));
+      vec1->push_back(vec2->at(2*i+1));
+    }
+  }
+  vec1->push_back(backElem);
+}
+
+/*
+Error in this method; change in order of numbers affects what the program finds
+*/
 vector<int>* SudokuSolutionValidator::identifyReplacementPair(vector<int>* error)
 {
   vector<vector<int>*>* rowsSeen = new vector<vector<int>* >();
@@ -341,7 +351,7 @@ vector<int>* SudokuSolutionValidator::identifyReplacementPair(vector<int>* error
   {
     if (rowsSeen->at(i)->at(1) > rowsSeen->at(location)->at(1))
     {
-      rowReplacement = rowsSeen->at(2*i)->at(0);
+      rowReplacement = rowsSeen->at(i)->at(0);
       location = i;
     }
   }
@@ -449,18 +459,16 @@ void SudokuSolutionValidator::makeReplacement(vector<int>* location, vector<int>
 Can find which cell to change; still needs a helper method to find which
 element to replace with.
 */
-void SudokuSolutionValidator::toFix(vector<vector<int>* >* errors)
+void SudokuSolutionValidator::toFix()
 {
-  if (errors->size() == 0)
+  while (this->errorList->size() != 0)
   {
-    cout << "There are no errors remaining in the board." << endl;
-    return;
+    vector<int>* location = identifyReplacementPair(this->errorList->at(0));
+    makeReplacement(location, this->errorList->at(0));
+    this->errorList->clear();
+    checkBoard();
+    formatErrors(this->errorList);
   }
-  vector<int>* location = identifyReplacementPair(errors->at(0));
-  makeReplacement(location, errors->at(0));
-  errors->erase(errors->begin());
-  checkBoard();
-  toFix(errorList);
 }
 
 void SudokuSolutionValidator::fixBoard()
@@ -471,5 +479,6 @@ void SudokuSolutionValidator::fixBoard()
     return;
   }
   checkBoard();
-  toFix(errorList);
+  formatErrors(this->errorList);
+  toFix();
 }
