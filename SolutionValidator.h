@@ -14,7 +14,6 @@ Project: Sudoku Solution Validator
 class SudokuSolutionValidator
 {
   private:
-    std::vector<std::string>* solutionList;
     std::vector<std::vector<int>* >* errorList;
     int** gameBoard;
     pthread_mutex_t lock;

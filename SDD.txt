@@ -1,7 +1,7 @@
 Sudoku Solution Validator Design Document
 
 Trevor Kling
-3 March 2019
+26 March 2019
 
 Overview:
 
@@ -17,52 +17,69 @@ Apply multithreading to improve computation speed.
 
 Milestones:
 3 March 2019 - Complete SDD
+15 March 2019 - Complete File IO and Test Cases
+25 March 2019 - Complete Error Correction and Test Automation
+26 March 2019 - Annotate Code, Review Software Design Document
 
 Proposed Solution:
 
 Class: SudokuValidator
   - private variables:
-     vector<string> solutionList:
-       Contains a list of changes to make to fix the errors in the input file
-       
-     vector<vector<int> > errorList:
+     std::vector<std::vector<int> > errorList:
        Each element of the list contains 3 parameters; the row, the column, and a duplicate character
-       
+
      int** gameBoard:
        Contains the sudoku grid, taken in from the input specifications.
-       
+
      pthread_mutex_t lock:
        Standard mutex lock for multithreading access to the error list.
-       
+
+     pthread_t threads[3]
+       Container for the 3 threads used in the program
+
   - public variables:
       N/A
   - private methods:
       void checkRows():
-        Finds errors in a particular row.  Consists of looping from 0 to N-1 and calling findRowError(i) on the specific row 
+        Finds errors in a particular row.  Consists of looping from 0 to N-1 and calling findRowError(i) on the specific row
         number.
-        
+
       void findRowError(int i):
-        Iterates over gameBoard[i], adding each unique character it comes across to a vector.  If a character is encountered
-        twice, the set of row-column-element is added to the error list if it is new.
-        
+        Iterates over gameBoard[i], comparing each character to all following characters.  If a character is encountered
+        twice, the set of row-column-element is added to the error list if it is new.  Errors take the format
+        ([row, column] [row, column] Element), with the row-column pairs indicating where the element was seen twice
+        and the element indicating which specific character was encountered.
+
       Methods for checkColumn, findColumnError, checkBlock, and findBlockError should follow identically.
-      
+
+      void checkBoard();
+
+      void formatErrors(std::vector<std::vector<int>* >* errors);
+
+      void mergeVectors(std::vector<int>* vec1, std::vector<int>* vec2);
+
+      std::vector<int>* identifyReplacementPair(std::vector<int>* error);
+
+
+      std::vector<int>* identifyBlock(std::vector<int>* location);
+
+
+      void makeReplacement(std::vector<int>* location, std::vector<int>* error);
+
+
       void toFix()
-        Each error is then checked for the row, column, and block.  The block solution is replaced, then
-        findRowError and findColumnError are called on the given row and column.  IThe initial error is removed
-        from the errorList and a string indicating what to replace the error element with is added to the solutionList.
-        If the errorList is not empty, toFix is called recursively.
+
 
   - public methods:
     void readFile(string fileName):
       Reads in a file, parsing it to a two-dimensional array assigned to "gameBoard".
-      
+
     void fixBoard():
-      Having read in a gameBoard, the program proceeds to reccomend methods to fix the board.  This is the main function of 
-      the class, and will largely be calling other methods.  Th class will instantiate three threads; one to check for errors
-      in the format of rows, one to check columns, and one to check blocks.  All of these threads will write their errors to 
-      the "errorList."  The process of fixing errors is then given to a helper method toFix.  Once toFix finishes, the set of
+      Having read in a gameBoard, the program proceeds to reccomend methods to fix the board.  This is the main function of
+      the class, and will largely be calling other methods.  .  Once toFix finishes, the set of
       solutions in order of application is printed to the command line.
-      
+
+    Constructor and destructor are also public.
+
 Open Questions:
-Is there an optimal way to check for how to solve a given error without disrupting the rest of the grid?
+Is there a more elegant way to determine which cell to replace?

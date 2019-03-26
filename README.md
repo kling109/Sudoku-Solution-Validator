@@ -3,12 +3,17 @@
 Trevor Kling: CPSC 380 Assignment 1
 
 ## Introduction
+This program implements a Sudoku puzzle validator.  The program takes an input of a formatted text file, and outputs a set of reccomendations to fix the given grid.   
+The file should be formatted in a grid, with entries in each row separated by commas.  The program then will read in the file, evaluate the grid for errors, and output
+a list of actions to take in order to fix any issues in the grid.
 
 ## Specification
 
 ## Known Issues
+None.
 
 ## Compilation Instructions
+Compile on the Linux command line with g++.  The flag "-lpthread" must be included to enable multithreading.
 
 ## Sources
 

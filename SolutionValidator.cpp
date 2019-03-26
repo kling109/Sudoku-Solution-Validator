@@ -239,6 +239,9 @@ void SudokuSolutionValidator::findBlockError(int x, int y)
   }
 }
 
+/*
+
+*/
 void SudokuSolutionValidator::checkBoard()
 {
   pthread_create(&(threads[0]), NULL, (THREADFUNCPOINTER) &SudokuSolutionValidator::checkRows, this);
@@ -249,16 +252,11 @@ void SudokuSolutionValidator::checkBoard()
   pthread_join(threads[2], NULL);
 }
 
+/*
+
+*/
 void SudokuSolutionValidator::formatErrors(vector<vector<int>* >* errors)
 {
-  for (int i = 0; i < errors->size(); ++i)
-  {
-    for (int j = 0; j < errors->at(i)->size(); ++j)
-    {
-      cout << errors->at(i)->at(j) << ", ";
-    }
-    cout << endl;
-  }
   for (int i = 0; i < errors->size(); ++i)
   {
     for (int j = i+1; j < errors->size(); ++j)
@@ -284,17 +282,11 @@ void SudokuSolutionValidator::formatErrors(vector<vector<int>* >* errors)
       }
     }
   }
-  cout << "done" << endl;
-  for (int i = 0; i < errors->size(); ++i)
-  {
-    for (int j = 0; j < errors->at(i)->size(); ++j)
-    {
-      cout << errors->at(i)->at(j) << ", ";
-    }
-    cout << endl;
-  }
 }
 
+/*
+
+*/
 void SudokuSolutionValidator::mergeVectors(vector<int>* vec1, vector<int>* vec2)
 {
   int backElem = vec1->back();
@@ -320,7 +312,7 @@ void SudokuSolutionValidator::mergeVectors(vector<int>* vec1, vector<int>* vec2)
 }
 
 /*
-Error in this method; change in order of numbers affects what the program finds
+
 */
 vector<int>* SudokuSolutionValidator::identifyReplacementPair(vector<int>* error)
 {
@@ -392,6 +384,9 @@ vector<int>* SudokuSolutionValidator::identifyReplacementPair(vector<int>* error
   return newLoc;
 }
 
+/*
+
+*/
 vector<int>* SudokuSolutionValidator::identifyBlock(vector<int>* location)
 {
   vector<int>* block = new vector<int>();
@@ -430,6 +425,9 @@ vector<int>* SudokuSolutionValidator::identifyBlock(vector<int>* location)
   return block;
 }
 
+/*
+
+*/
 void SudokuSolutionValidator::makeReplacement(vector<int>* location, vector<int>* error)
 {
   vector<int>* block = identifyBlock(location);
@@ -451,13 +449,12 @@ void SudokuSolutionValidator::makeReplacement(vector<int>* location, vector<int>
       nums->push_back(i);
     }
   }
-  cout << "Replace the " << error->back() << " at [" << location->at(0)+1 << ", " << location->at(1)+1 << "] with " << nums->at(0) << endl;;
+  cout << "Replace the " << error->back() << " at [" << location->at(0)+1 << ", " << location->at(1)+1 << "] with " << nums->at(0) << "." << endl;;
   gameBoard[location->at(0)][location->at(1)] = nums->at(0);
 }
 
 /*
-Can find which cell to change; still needs a helper method to find which
-element to replace with.
+
 */
 void SudokuSolutionValidator::toFix()
 {
@@ -471,6 +468,9 @@ void SudokuSolutionValidator::toFix()
   }
 }
 
+/*
+
+*/
 void SudokuSolutionValidator::fixBoard()
 {
   if (gameBoard == NULL)
@@ -479,6 +479,24 @@ void SudokuSolutionValidator::fixBoard()
     return;
   }
   checkBoard();
-  formatErrors(this->errorList);
-  toFix();
+  if (errorList->size() != 0)
+  {
+    cout << "The following cells were found to be producing conflicts:" << endl;
+    for (int i = 0; i < this->errorList->size(); ++i)
+    {
+      for (int j = 0; j < (this->errorList->at(i)->size()-1)/2; ++j)
+      {
+        cout << "[" << this->errorList->at(i)->at(2*j)+1 << ", " << this->errorList->at(i)->at(2*j + 1)+1 << "] ";
+      }
+      cout << " Element: " << this->errorList->at(i)->back() << endl;
+    }
+    cout << "To fix these:" << endl;;
+    formatErrors(this->errorList);
+    toFix();
+    cout << "No further errors found in the supplied board." << endl;
+  }
+  else
+  {
+    cout << "The supplied board is correct." << endl;
+  }
 }
