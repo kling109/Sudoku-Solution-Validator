@@ -28,6 +28,7 @@ class SudokuSolutionValidator
     void checkBoard();
     void findBlockError(int x, int y);
     std::vector<int>* identifyReplacementPair(std::vector<int>* error);
+    std::vector<int>* identifyBlock(std::vector<int>* location);
     void makeReplacement(std::vector<int>* location);
     void toFix(std::vector<std::vector<int>* >* errors);
   public:

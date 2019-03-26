@@ -7,14 +7,22 @@ Last Date Modified: 11 March 2019
 Project: Sudoku Solution Validator
 */
 
+#include <iostream>
 #include "SolutionValidator.h"
 
 using namespace std;
 
-int main()
+int main(int argc, char* argv[])
 {
   SudokuSolutionValidator* tester = new SudokuSolutionValidator();
-  tester->readFile("test1.txt");
-  tester->fixBoard();
+  if (argc > 1)
+  {
+      tester->readFile(argv[1]);
+      tester->fixBoard();
+  }
+  else
+  {
+    cout << "Input a file for the validator by running the command './SolutionValidator [FileName]'" << endl;
+  }
   return 0;
 }

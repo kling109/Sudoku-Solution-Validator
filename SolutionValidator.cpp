@@ -292,17 +292,17 @@ vector<int>* SudokuSolutionValidator::identifyReplacementPair(vector<int>* error
 {
   int rowChoice = -1;
   int colChoice = -1;
-  for (int j = 1; j < error->size()-1; j = j+2)
+  for (int i = 0; i < error->size()-1; i = i+2)
   {
-    for (int k = j; k < error->size()-1; k = k+2)
+    for (int j = 0; j < error->size()-1; j = j+2)
     {
-      if (rowChoice == -1 && error->at(j-1) == error->at(k-1))
+      if (rowChoice == -1 && i != j && error->at(i) == error->at(j))
       {
-        rowChoice = error->at(j-1);
+        rowChoice = error->at(i);
       }
-      if (colChoice == -1 && error->at(j) == error->at(k))
+      if (colChoice == -1 && i != j && error->at(i+1) == error->at(j+1))
       {
-        colChoice = error->at(j);
+        colChoice = error->at(i+1);
       }
     }
     if (rowChoice != -1 && colChoice != -1)
@@ -316,26 +316,103 @@ vector<int>* SudokuSolutionValidator::identifyReplacementPair(vector<int>* error
   return pair;
 }
 
+vector<int>* SudokuSolutionValidator::identifyBlock(vector<int>* location)
+{
+  vector<int>* block = new vector<int>();
+  switch(location->at(0))
+  {
+    case 0:
+    case 1:
+    case 2: block->push_back(0);
+            break;
+    case 3:
+    case 4:
+    case 5: block->push_back(3);
+            break;
+    case 6:
+    case 7:
+    case 8: block->push_back(6);
+            break;
+    default: break;
+  }
+  switch(location->at(1))
+  {
+    case 0:
+    case 1:
+    case 2: block->push_back(0);
+            break;
+    case 3:
+    case 4:
+    case 5: block->push_back(3);
+            break;
+    case 6:
+    case 7:
+    case 8: block->push_back(6);
+            break;
+    default: break;
+  }
+  return block;
+}
+
 void SudokuSolutionValidator::makeReplacement(vector<int>* location)
 {
-  vector<int>* nums = new vector<int>();
+  vector<int>* rowNums = new vector<int>();
+  vector<int>* colNums = new vector<int>();
+  vector<int>* blockNums = new vector<int>();
   for (int i = 1; i < 10; ++i)
   {
-    nums->push_back(i);
+    rowNums->push_back(i);
+    colNums->push_back(i);
+    blockNums->push_back(i);
   }
+  vector<int>* block = identifyBlock(location);
   for (int i = 0; i < 9; ++i)
   {
-    for (int j = 0; j < nums->size(); ++j)
+    for (int j = 0; j < rowNums->size(); ++j)
     {
-      if (gameBoard[location->at(0)][i] == nums->at(j))
+      if (gameBoard[location->at(0)][i] == rowNums->at(j))
       {
-        nums->erase(nums->begin() + j);
+        rowNums->erase(rowNums->begin() + j);
+        break;
+      }
+    }
+    for (int j = 0; j < colNums->size(); ++j)
+    {
+      if (gameBoard[i][location->at(1)] == colNums->at(j))
+      {
+        colNums->erase(colNums->begin() + j);
+        break;
+      }
+    }
+    int x = block->at(0) + (i%3);
+    int y = block->at(1) + (int)(i/3);
+    for (int j = 0; j < blockNums->size(); ++j)
+    {
+      if (gameBoard[x][y] == blockNums->at(j))
+      {
+        blockNums->erase(blockNums->begin() + j);
         break;
       }
     }
   }
-  cout << "Change the contents of cell [" << location->at(0)+1 << ", " << location->at(1)+1 << "] to " << nums->at(0) << endl;
-  gameBoard[location->at(0)][location->at(1)] = nums->at(0);
+  int num = -1;
+  if (rowNums->size() != 0)
+  {
+    num = rowNums->at(0);
+  }
+  else if (colNums->size() != 0)
+  {
+    num = colNums->at(0);
+  }
+  else if (blockNums->size() != 0)
+  {
+    num = blockNums->at(0);
+  }
+  if (num != -1)
+  {
+    cout << "Change the contents of cell [" << location->at(0)+1 << ", " << location->at(1)+1 << "] to " << num << endl;
+    gameBoard[location->at(0)][location->at(1)] = num;
+  }
 }
 
 /*
