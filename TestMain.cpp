@@ -3,7 +3,7 @@ Name: Trevor Kling
 ID: 002270716
 Email: kling109@mail.chapman.edu
 Course: CPSC 380 Operating Systems
-Last Date Modified: 11 March 2019
+Last Date Modified: 26 March 2019
 Project: Sudoku Solution Validator
 */
 
@@ -12,6 +12,9 @@ Project: Sudoku Solution Validator
 
 using namespace std;
 
+/*
+Main method of the program.  Primarily instantiates the solution testing method and passes arguments to the program.
+*/
 int main(int argc, char* argv[])
 {
   SudokuSolutionValidator* tester = new SudokuSolutionValidator();

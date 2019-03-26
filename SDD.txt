@@ -39,6 +39,7 @@ Class: SudokuValidator
 
   - public variables:
       N/A
+
   - private methods:
       void checkRows():
         Finds errors in a particular row.  Consists of looping from 0 to N-1 and calling findRowError(i) on the specific row
@@ -48,27 +49,41 @@ Class: SudokuValidator
         Iterates over gameBoard[i], comparing each character to all following characters.  If a character is encountered
         twice, the set of row-column-element is added to the error list if it is new.  Errors take the format
         ([row, column] [row, column] Element), with the row-column pairs indicating where the element was seen twice
-        and the element indicating which specific character was encountered.
+        and the element indicating which specific character was encountered.  Pushing errors to the errorList is protected by
+        a mutex lock, so that each thread can only push to the errorList if no other thread is currently adding an element.
 
       Methods for checkColumn, findColumnError, checkBlock, and findBlockError should follow identically.
 
       void checkBoard();
+        A method for organizing and executing the error finding methods.  The method produces three threads, each receiving
+        either rows, columns, or blocks to check for errors.  The program uses a wrapper to allow for the methods to execute
+        a function from the class.  Once the threads finish, the program rejoins them to the main thread.
 
       void formatErrors(std::vector<std::vector<int>* >* errors);
+        This method formats the raw error data found by checking the board.  The errors are sorted into sets based on commmon
+        issues; if two errors contain the same cell causing issues, they are combined into one larger error.  This ensures
+        that only one of these cells is changed, allowing the program to find the most efficient changes to make in order to
+        fix the board.
 
       void mergeVectors(std::vector<int>* vec1, std::vector<int>* vec2);
+        A helper method that transfers all contents from vec2 to vec1.  The method also removes duplicate elements from the
+        resulting vectors.
 
       std::vector<int>* identifyReplacementPair(std::vector<int>* error);
-
+        Another helper method that determines which cell in a given composite error should be replaced.  The method considers
+        which rows and columns appear the most frequently in the error, then returns those values as a vector pair.
 
       std::vector<int>* identifyBlock(std::vector<int>* location);
-
+        A simple helper method that determines which block a given location falls into.  The process returns a pair corresponding
+        to the top left corner of the block.
 
       void makeReplacement(std::vector<int>* location, std::vector<int>* error);
-
+        The main workhorse method for fixing errors in the grid.  Given a location and the corresponding error, the program determines
+        what element should replace the given location.  The element is determined by finding which element is missing from the block
+        that the location falls in, via similar methods to the initial error finding.
 
       void toFix()
-
+        Calls the above methods continuously until the full check of the board is completed without an error being added to the errorList.
 
   - public methods:
     void readFile(string fileName):
@@ -76,10 +91,19 @@ Class: SudokuValidator
 
     void fixBoard():
       Having read in a gameBoard, the program proceeds to reccomend methods to fix the board.  This is the main function of
-      the class, and will largely be calling other methods.  .  Once toFix finishes, the set of
-      solutions in order of application is printed to the command line.
+      the class, and will largely be calling other methods.  Primarily focuses on interfacing with the user and informing them
+      of the progress.  Once toFix finishes, the set of solutions in order of application is printed to the command line.
 
     Constructor and destructor are also public.
+
+Threading Choices:
+For this project, 3 threads were spawned in addition to the main thread.  This design was chosen as a balance between the
+overhead of thread management and actual computation.  For 3 threads, each thread is given one full section of the board to
+process.  This helps to ensure that threads stay busy and that the processing time of the threads is larger than the overhead
+of creating and synchronizing the threads.  All calculations done by the threads are relatively simple integer comparisons, so
+a relatively large volume of calculations is needed to justify the creation of the threads.  A mutex is chosen as the synchronization
+mechanism as the portion being synchronized is relatively small, so it is acceptable to simply let threads spin while they wait
+and avoid unnecessary stalls.
 
 Open Questions:
 Is there a more elegant way to determine which cell to replace?

@@ -3,7 +3,7 @@ Name: Trevor Kling
 ID: 002270716
 Email: kling109@mail.chapman.edu
 Course: CPSC 380 Operating Systems
-Last Date Modified: 11 March 2019
+Last Date Modified: 26 March 2019
 Project: Sudoku Solution Validator
 */
 
@@ -25,7 +25,6 @@ gameBoard to null to check if a file has been read later.
 */
 SudokuSolutionValidator::SudokuSolutionValidator()
 {
-  this->solutionList = new vector<string>();
   this->errorList = new vector<vector<int>*>();
   this->gameBoard = NULL;
 }
@@ -37,7 +36,6 @@ nested vectors is unnecessary, as c++ vectors are deleted when they fall out of 
 */
 SudokuSolutionValidator::~SudokuSolutionValidator()
 {
-  delete this->solutionList;
   delete this->errorList;
   if (this->gameBoard != NULL)
   {
@@ -240,7 +238,8 @@ void SudokuSolutionValidator::findBlockError(int x, int y)
 }
 
 /*
-
+Dispatcher method for the board verification.  The program distributes the rows, columns, and blocks to different threads to check.
+Once all have completed, they are merged back into the main thread.
 */
 void SudokuSolutionValidator::checkBoard()
 {
@@ -253,7 +252,9 @@ void SudokuSolutionValidator::checkBoard()
 }
 
 /*
-
+A method to handle the formatting of errors.  Primarily, this means finding any errors which share row-column pairs and
+adding them to the same composite error.  Errors are removed from the list as they are merged into other vectors, requiring
+programmer-defined updating of the "j" loop variable when vectors merge in order to prevent vectors from being missed.
 */
 void SudokuSolutionValidator::formatErrors(vector<vector<int>* >* errors)
 {
@@ -285,7 +286,8 @@ void SudokuSolutionValidator::formatErrors(vector<vector<int>* >* errors)
 }
 
 /*
-
+A helper method that merges two vectors, ensuring that all elements added to the first vector from the
+second vector are unique.  Non-unique elements are discarded.
 */
 void SudokuSolutionValidator::mergeVectors(vector<int>* vec1, vector<int>* vec2)
 {
@@ -312,7 +314,9 @@ void SudokuSolutionValidator::mergeVectors(vector<int>* vec1, vector<int>* vec2)
 }
 
 /*
-
+A method which determines which row and column from a composite error to use.  The method uses a
+voting scheme, in which each occurance of a specific row or column value is a single vote for that
+option.  The most common rows/columns are then used as the location to be replaced.
 */
 vector<int>* SudokuSolutionValidator::identifyReplacementPair(vector<int>* error)
 {
@@ -385,7 +389,8 @@ vector<int>* SudokuSolutionValidator::identifyReplacementPair(vector<int>* error
 }
 
 /*
-
+A simple helper method to identify which block a given location falls in.  The cascading
+nature of a switch statement is used to quickly identify the correct cases, regardless of input.
 */
 vector<int>* SudokuSolutionValidator::identifyBlock(vector<int>* location)
 {
@@ -426,7 +431,9 @@ vector<int>* SudokuSolutionValidator::identifyBlock(vector<int>* location)
 }
 
 /*
-
+Handles replacing a given location with a correct value.  The program finds which number(s) is missing from
+the given locations' block.  One of these numbers is then used to replace the error location, and a message is
+displayed to the user indicating how to change the grid.
 */
 void SudokuSolutionValidator::makeReplacement(vector<int>* location, vector<int>* error)
 {
@@ -454,7 +461,8 @@ void SudokuSolutionValidator::makeReplacement(vector<int>* location, vector<int>
 }
 
 /*
-
+Driver method for the program.  The method runs the required processes to fix the board, then checks the board for
+any new errors.  The program continues to run until the error list is empty after the board is checked.
 */
 void SudokuSolutionValidator::toFix()
 {
@@ -469,7 +477,9 @@ void SudokuSolutionValidator::toFix()
 }
 
 /*
-
+Handles interfacing with the user and running the error fixing program.  The main focus of this loop
+is simply to inform the user of where errors were found in their input, and how to fix those errors.
+The program also displays a mesage when finsihed, or if the board given is already correct.
 */
 void SudokuSolutionValidator::fixBoard()
 {

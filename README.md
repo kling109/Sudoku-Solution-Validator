@@ -8,6 +8,8 @@ The file should be formatted in a grid, with entries in each row separated by co
 a list of actions to take in order to fix any issues in the grid.
 
 ## Specification
+Programmed in C++ with standard libraries.  Implemented with pthreads, compiled with g++.  Intended to be run on Linux based operating systems, tested on Ubuntu 18.04
+subsystem for Windows.
 
 ## Known Issues
 None.
