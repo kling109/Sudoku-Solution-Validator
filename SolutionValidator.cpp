@@ -99,26 +99,50 @@ void SudokuSolutionValidator::insertUniqueRecord(vector<int>* record, vector<vec
   bool unique = true;
   for (int k = 0; k < fullList->size(); ++k)
   {
-    if (fullList->at(k)->at(0) == record->at(0) && fullList->at(k)->at(1) == record->at(1))
+    for (int l = 0; l < (int)((fullList->at(k)->size()-1)/2); ++l)
     {
-      bool noMatch = true;
-      for (int j = 0; j < (int)((fullList->at(k)->size()-1)/2); ++j)
+      if (fullList->at(k)->at(2*l) == record->at(0) && fullList->at(k)->at(2*l+1) == record->at(1))
       {
-        if (fullList->at(k)->at(2*j) == record->at(2) && fullList->at(k)->at(2*j+1) == record->at(3))
+        bool noMatch = true;
+        for (int j = 0; j < (int)((fullList->at(k)->size()-1)/2); ++j)
         {
-          noMatch = false;
+          if (fullList->at(k)->at(2*j) == record->at(2) && fullList->at(k)->at(2*j+1) == record->at(3))
+          {
+            noMatch = false;
+          }
         }
+        if (noMatch)
+        {
+          int item = fullList->at(k)->back();
+          fullList->at(k)->pop_back();
+          fullList->at(k)->push_back(record->at(2));
+          fullList->at(k)->push_back(record->at(3));
+          fullList->at(k)->push_back(item);
+        }
+        unique = false;
+        break;
       }
-      if (noMatch)
+      else if (fullList->at(k)->at(2*l) == record->at(2) && fullList->at(k)->at(2*l+1) == record->at(3))
       {
-        int item = fullList->at(k)->back();
-        fullList->at(k)->pop_back();
-        fullList->at(k)->push_back(record->at(2));
-        fullList->at(k)->push_back(record->at(3));
-        fullList->at(k)->push_back(item);
+        bool noMatch = true;
+        for (int j = 0; j < (int)((fullList->at(k)->size()-1)/2); ++j)
+        {
+          if (fullList->at(k)->at(2*j) == record->at(0) && fullList->at(k)->at(2*j+1) == record->at(1))
+          {
+            noMatch = false;
+          }
+        }
+        if (noMatch)
+        {
+          int item = fullList->at(k)->back();
+          fullList->at(k)->pop_back();
+          fullList->at(k)->push_back(record->at(0));
+          fullList->at(k)->push_back(record->at(1));
+          fullList->at(k)->push_back(item);
+        }
+        unique = false;
+        break;
       }
-      unique = false;
-      break;
     }
   }
   if (unique)
@@ -308,13 +332,54 @@ vector<int>* SudokuSolutionValidator::identifyReplacementPair(vector<int>* error
       vector<int>* newRow = new vector<int>();
       newRow->push_back(row);
       newRow->push_back(1);
-      rowsSeen->push_back(newRow)
+      rowsSeen->push_back(newRow);
     }
   }
+  int location = 0;
+  int rowReplacement = rowsSeen->at(0)->at(0);
   for (int i = 0; i < rowsSeen->size(); ++i)
   {
-    cout << "Row: " << rowsSeen->at(i)->at(0) << ", Number: " << rowsSeen->at(i)->at(1) << endl;
+    if (rowsSeen->at(i)->at(1) > rowsSeen->at(location)->at(1))
+    {
+      rowReplacement = rowsSeen->at(2*i)->at(0);
+      location = i;
+    }
   }
+  vector<vector<int>*>* colsSeen = new vector<vector<int>* >();
+  for (int i = 0; i < (error->size()-1)/2; ++i)
+  {
+    int col = error->at(2*i+1);
+    bool newC = true;
+    for (int j = 0; j < colsSeen->size(); ++j)
+    {
+      if (colsSeen->at(j)->at(0) == col)
+      {
+        newC = false;
+        ++colsSeen->at(j)->at(1);
+      }
+    }
+    if (newC)
+    {
+      vector<int>* newCol = new vector<int>();
+      newCol->push_back(col);
+      newCol->push_back(1);
+      colsSeen->push_back(newCol);
+    }
+  }
+  location = 0;
+  int colReplacement = colsSeen->at(0)->at(0);
+  for (int i = 0; i < colsSeen->size(); ++i)
+  {
+    if (colsSeen->at(i)->at(1) > colsSeen->at(location)->at(1))
+    {
+      colReplacement = colsSeen->at(i)->at(0);
+      location = i;
+    }
+  }
+  vector<int>* newLoc = new vector<int>();
+  newLoc->push_back(rowReplacement);
+  newLoc->push_back(colReplacement);
+  return newLoc;
 }
 
 vector<int>* SudokuSolutionValidator::identifyBlock(vector<int>* location)
@@ -355,9 +420,29 @@ vector<int>* SudokuSolutionValidator::identifyBlock(vector<int>* location)
   return block;
 }
 
-void SudokuSolutionValidator::makeReplacement(vector<int>* location)
+void SudokuSolutionValidator::makeReplacement(vector<int>* location, vector<int>* error)
 {
-
+  vector<int>* block = identifyBlock(location);
+  vector<int>* nums = new vector<int>();
+  for (int i = 1; i < 10; ++i)
+  {
+    bool unique = true;
+    for (int j = 0; j < 9; ++j)
+    {
+      int x = block->at(0) + (j%3);
+      int y = block->at(1) + (int)(j/3);
+      if (gameBoard[x][y] == i)
+      {
+        unique = false;
+      }
+    }
+    if (unique)
+    {
+      nums->push_back(i);
+    }
+  }
+  cout << "Replace the " << error->back() << " at [" << location->at(0)+1 << ", " << location->at(1)+1 << "] with " << nums->at(0) << endl;;
+  gameBoard[location->at(0)][location->at(1)] = nums->at(0);
 }
 
 /*
@@ -371,10 +456,11 @@ void SudokuSolutionValidator::toFix(vector<vector<int>* >* errors)
     cout << "There are no errors remaining in the board." << endl;
     return;
   }
-  makeReplacement(errors->at(0));
+  vector<int>* location = identifyReplacementPair(errors->at(0));
+  makeReplacement(location, errors->at(0));
   errors->erase(errors->begin());
   checkBoard();
-  //toFix(errorList);
+  toFix(errorList);
 }
 
 void SudokuSolutionValidator::fixBoard()
