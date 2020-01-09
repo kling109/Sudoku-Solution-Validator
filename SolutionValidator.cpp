@@ -19,23 +19,23 @@ using namespace std;
 
 typedef void* (*THREADFUNCPOINTER)(void *);
 
-/*
-Default constuctor for a solution validator.  Initializes vectors for later use, and sets
-gameBoard to null to check if a file has been read later.
-*/
 SudokuSolutionValidator::SudokuSolutionValidator()
 {
+  /*
+  Default constuctor for a solution validator.  Initializes vectors for later use, and sets
+  gameBoard to null to check if a file has been read later.
+  */
   this->errorList = new vector<vector<int>*>();
   this->gameBoard = NULL;
 }
 
-/*
-Default deconstructor for a solution validator.  Removes the allocated memory for the vectors, and
-deletes the gameboard if it has been allocated.  Note that iteration through the errorlist to remove
-nested vectors is unnecessary, as c++ vectors are deleted when they fall out of scope.
-*/
 SudokuSolutionValidator::~SudokuSolutionValidator()
 {
+  /*
+  Default deconstructor for a solution validator.  Removes the allocated memory for the vectors, and
+  deletes the gameboard if it has been allocated.  Note that iteration through the errorlist to remove
+  nested vectors is unnecessary, as c++ std vectors are deleted when they fall out of scope.
+  */
   delete this->errorList;
   if (this->gameBoard != NULL)
   {
@@ -47,15 +47,18 @@ SudokuSolutionValidator::~SudokuSolutionValidator()
   }
 }
 
-/*
-A file reader method for the SudokuSolutionValidator.  Takes an argument for a file name, then returns nothing.
-The file is used to initialize the gameBoard variable, which stores the value for each of the numbers in the
-sudoku grid.  To convert the characters read in by the getlne function to numbers, an ASCII conversion is used.
-Numbers start at 48 in ASCII code, so by converting the character to its code and subtracting 48 the number can be
-obtained.
-*/
 void SudokuSolutionValidator::readFile(string fileName)
 {
+  /*
+  A file reader method for the SudokuSolutionValidator.  Takes an argument for a file name, then returns nothing.
+  The file is used to initialize the gameBoard variable, which stores the value for each of the numbers in the
+  sudoku grid.  To convert the characters read in by the getlne function to numbers, an ASCII conversion is used.
+  Numbers start at 48 in ASCII code, so by converting the character to its code and subtracting 48 the number can be
+  obtained.
+
+  Keyword Arguments:
+  fileName (string): The file to use when reading in a sudoku board.
+  */
   if (fileName == "")
   {
     cout << "No file was given.";
@@ -86,26 +89,32 @@ void SudokuSolutionValidator::readFile(string fileName)
   }
 }
 
-/*
-Iterates over all rows of the grid, checking them for errors.
-*/
 void* SudokuSolutionValidator::checkRows(void* ph)
 {
+  /*
+  Iterates over all rows of the grid, checking them for errors.
+
+  Keyword Arguments:
+  ph (void*): a placeholder argument required for use in multithreading.
+  */
   for (int i = 0; i < 9; ++i)
   {
     findRowError(i);
   }
 }
 
-/*
-Checks a specific row for errors.  If a duplicate element is found in the row, it indicates that
-all 9 elements are not present in that row.  The program then pushes a record of the duplicate to the
-error list, informing the program of where an error has occurred in the grid.  A mutual exclusion lock
-ensures that, when a thread checks the list, all elements in the list are accounted for and one is not
-in the process of being added.
-*/
 void SudokuSolutionValidator::findRowError(int i)
 {
+  /*
+  Checks a specific row for errors.  If a duplicate element is found in the row, it indicates that
+  all 9 elements are not present in that row.  The program then pushes a record of the duplicate to the
+  error list, informing the program of where an error has occurred in the grid.  A mutual exclusion lock
+  ensures that, when a thread checks the list, all elements in the list are accounted for and one is not
+  in the process of being added.
+
+  Keyword Arguments:
+  i (int): The row along which to search for errors.
+  */
   if (i > 8)
   {
     cout << "Improper bounds received." << endl;
@@ -131,26 +140,32 @@ void SudokuSolutionValidator::findRowError(int i)
   }
 }
 
-/*
-Iterates over all columnss of the grid, checking them for errors.
-*/
 void* SudokuSolutionValidator::checkColumns(void* ph)
 {
+  /*
+  Iterates over all columnss of the grid, checking them for errors.
+
+  Keyword Arguments:
+  ph (void*): a placeholder argument required for use in multithreading.
+  */
   for (int j = 0; j < 9; ++j)
   {
     findColumnError(j);
   }
 }
 
-/*
-Checks a specific column for errors.  If a duplicate element is found in the column, it indicates that
-all 9 elements are not present in that column.  The program then pushes a record of the duplicate to the
-error list, informing the program of where an error has occurred in the grid.  A mutual exclusion lock
-ensures that, when a thread checks the list, all elements in the list are accounted for and one is not
-in the process of being added.
-*/
 void SudokuSolutionValidator::findColumnError(int j)
 {
+  /*
+  Checks a specific column for errors.  If a duplicate element is found in the column, it indicates that
+  all 9 elements are not present in that column.  The program then pushes a record of the duplicate to the
+  error list, informing the program of where an error has occurred in the grid.  A mutual exclusion lock
+  ensures that, when a thread checks the list, all elements in the list are accounted for and one is not
+  in the process of being added.
+
+  Keyword Arguments:
+  j (int): The column along which to search for errors.
+  */
   if (j > 8)
   {
     cout << "Improper bounds received." << endl;
@@ -176,11 +191,14 @@ void SudokuSolutionValidator::findColumnError(int j)
   }
 }
 
-/*
-Iterates over all blocks in the grid, checking them for errors.
-*/
 void* SudokuSolutionValidator::checkBlocks(void* ph)
 {
+  /*
+  Iterates over all blocks in the grid, checking them for errors.
+
+  Keyword Arguments:
+  ph (void*): a placeholder argument required for use in multithreading.
+  */
   for (int i = 0; i < 3; ++i)
   {
     for (int j = 0; j < 3; ++j)
@@ -192,15 +210,19 @@ void* SudokuSolutionValidator::checkBlocks(void* ph)
   }
 }
 
-/*
-Checks a specified 3x3 area of the grid for errors.  Each area is selected by inputting the
-x and y coordinate of the top left element.  The function then checks if every element in a
-3x3 range to the right and down from the given coordinates is unique.  If not, then the program
-adds an error to the error list.  A mutual exclusion lock ensures that, when a thread checks the
-list, all elements in the list are accounted for and one is not in the process of being added.
-*/
 void SudokuSolutionValidator::findBlockError(int x, int y)
 {
+  /*
+  Checks a specified 3x3 area of the grid for errors.  Each area is selected by inputting the
+  x and y coordinate of the top left element.  The function then checks if every element in a
+  3x3 range to the right and down from the given coordinates is unique.  If not, then the program
+  adds an error to the error list.  A mutual exclusion lock ensures that, when a thread checks the
+  list, all elements in the list are accounted for and one is not in the process of being added.
+
+  Keyword Arguments:
+  x (int): The x-coordinate of the upper left-hand element of the 3x3 block.
+  y (int): The y-coordinate of the upper left-hand element of the 3x3 block.
+  */
   if (x+2 > 8 || y+2 > 8)
   {
     cout << "Improper bounds received." << endl;
@@ -237,12 +259,12 @@ void SudokuSolutionValidator::findBlockError(int x, int y)
   }
 }
 
-/*
-Dispatcher method for the board verification.  The program distributes the rows, columns, and blocks to different threads to check.
-Once all have completed, they are merged back into the main thread.
-*/
 void SudokuSolutionValidator::checkBoard()
 {
+  /*
+  Dispatcher method for the board verification.  The program distributes the rows, columns, and blocks to different threads to check.
+  Once all have completed, they are merged back into the main thread.
+  */
   pthread_create(&(threads[0]), NULL, (THREADFUNCPOINTER) &SudokuSolutionValidator::checkRows, this);
   pthread_create(&(threads[1]), NULL, (THREADFUNCPOINTER) &SudokuSolutionValidator::checkColumns, this);
   pthread_create(&(threads[2]), NULL, (THREADFUNCPOINTER) &SudokuSolutionValidator::checkBlocks, this);
@@ -251,13 +273,16 @@ void SudokuSolutionValidator::checkBoard()
   pthread_join(threads[2], NULL);
 }
 
-/*
-A method to handle the formatting of errors.  Primarily, this means finding any errors which share row-column pairs and
-adding them to the same composite error.  Errors are removed from the list as they are merged into other vectors, requiring
-programmer-defined updating of the "j" loop variable when vectors merge in order to prevent vectors from being missed.
-*/
 void SudokuSolutionValidator::formatErrors(vector<vector<int>* >* errors)
 {
+  /*
+  A method to handle the formatting of errors.  Primarily, this means finding any errors which share row-column pairs and
+  adding them to the same composite error.  Errors are removed from the list as they are merged into other vectors, requiring
+  programmer-defined updating of the "j" loop variable when vectors merge in order to prevent vectors from being missed.
+
+  Keyword Arguments:
+  errors (vector<vector<int>*>*): A pointer to a list of errors produced by the "findError" methods.
+  */
   for (int i = 0; i < errors->size(); ++i)
   {
     for (int j = i+1; j < errors->size(); ++j)
@@ -285,12 +310,16 @@ void SudokuSolutionValidator::formatErrors(vector<vector<int>* >* errors)
   }
 }
 
-/*
-A helper method that merges two vectors, ensuring that all elements added to the first vector from the
-second vector are unique.  Non-unique elements are discarded.
-*/
 void SudokuSolutionValidator::mergeVectors(vector<int>* vec1, vector<int>* vec2)
 {
+  /*
+  A helper method that merges two vectors, ensuring that all elements added to the first vector from the
+  second vector are unique.  Non-unique elements are discarded.
+
+  Keyword Arguments:
+  vec1 (vector<int>*): The first vector to potentially be merged.
+  vec2 (vector<int>*): The second vector to potentially be merged.
+  */
   int backElem = vec1->back();
   vec1->pop_back();
   for (int i = 0; i < (vec2->size()-1)/2; ++i)
@@ -313,13 +342,19 @@ void SudokuSolutionValidator::mergeVectors(vector<int>* vec1, vector<int>* vec2)
   vec1->push_back(backElem);
 }
 
-/*
-A method which determines which row and column from a composite error to use.  The method uses a
-voting scheme, in which each occurance of a specific row or column value is a single vote for that
-option.  The most common rows/columns are then used as the location to be replaced.
-*/
 vector<int>* SudokuSolutionValidator::identifyReplacementPair(vector<int>* error)
 {
+  /*
+  A method which determines which row and column from a composite error to use.  The method uses a
+  voting scheme, in which each occurance of a specific row or column value is a single vote for that
+  option.  The most common rows/columns are then used as the location to be replaced.
+
+  Keyword Arguments:
+  error (vector<int>*): A sudoku board error to be fixed by the program.
+
+  Returns:
+  newLoc (vector<int>*): The location to be replaced to fix the given error.
+  */
   vector<vector<int>*>* rowsSeen = new vector<vector<int>* >();
   for (int i = 0; i < (error->size()-1)/2; ++i)
   {
@@ -388,12 +423,18 @@ vector<int>* SudokuSolutionValidator::identifyReplacementPair(vector<int>* error
   return newLoc;
 }
 
-/*
-A simple helper method to identify which block a given location falls in.  The cascading
-nature of a switch statement is used to quickly identify the correct cases, regardless of input.
-*/
 vector<int>* SudokuSolutionValidator::identifyBlock(vector<int>* location)
 {
+  /*
+  A simple helper method to identify which block a given location falls in.  The cascading
+  nature of a switch statement is used to quickly identify the correct cases, regardless of input.
+
+  Keyword Arguments:
+  location (vector<int>*): A position vector, containing an x and a y coordinate.
+
+  Returns:
+  block (vector<int>*): The upper left-hand location in the given element's block.
+  */
   vector<int>* block = new vector<int>();
   switch(location->at(0))
   {
@@ -430,13 +471,17 @@ vector<int>* SudokuSolutionValidator::identifyBlock(vector<int>* location)
   return block;
 }
 
-/*
-Handles replacing a given location with a correct value.  The program finds which number(s) is missing from
-the given locations' block.  One of these numbers is then used to replace the error location, and a message is
-displayed to the user indicating how to change the grid.
-*/
 void SudokuSolutionValidator::makeReplacement(vector<int>* location, vector<int>* error)
 {
+  /*
+  Handles replacing a given location with a correct value.  The program finds which number(s) is missing from
+  the given locations' block.  One of these numbers is then used to replace the error location, and a message is
+  displayed to the user indicating how to change the grid.
+
+  Keyword Arguments:
+  location (vector<int>*): The sudoku board location to be replaced.  Consists of an x-y pair.
+  error (vector<int>*): The specific error that requires a replacement at that location.
+  */
   vector<int>* block = identifyBlock(location);
   vector<int>* nums = new vector<int>();
   for (int i = 1; i < 10; ++i)
@@ -460,12 +505,12 @@ void SudokuSolutionValidator::makeReplacement(vector<int>* location, vector<int>
   gameBoard[location->at(0)][location->at(1)] = nums->at(0);
 }
 
-/*
-Driver method for the program.  The method runs the required processes to fix the board, then checks the board for
-any new errors.  The program continues to run until the error list is empty after the board is checked.
-*/
 void SudokuSolutionValidator::toFix()
 {
+  /*
+  Driver method for the program.  The method runs the required processes to fix the board, then checks the board for
+  any new errors.  The program continues to run until the error list is empty after the board is checked.
+  */
   while (this->errorList->size() != 0)
   {
     vector<int>* location = identifyReplacementPair(this->errorList->at(0));
@@ -476,13 +521,13 @@ void SudokuSolutionValidator::toFix()
   }
 }
 
-/*
-Handles interfacing with the user and running the error fixing program.  The main focus of this loop
-is simply to inform the user of where errors were found in their input, and how to fix those errors.
-The program also displays a mesage when finsihed, or if the board given is already correct.
-*/
 void SudokuSolutionValidator::fixBoard()
 {
+  /*
+  Handles interfacing with the user and running the error fixing program.  The main focus of this loop
+  is simply to inform the user of where errors were found in their input, and how to fix those errors.
+  The program also displays a mesage when finsihed, or if the board given is already correct.
+  */
   if (gameBoard == NULL)
   {
     cout << "No sudoku grid has been supplied." << endl;
